@@ -24,6 +24,8 @@ day_length<- 16 # half hours
 swr<- 20
 DOM <- 20 # Days in A Month
 MPS <- 2 # Months Per Season, Focus on June, July and August
+
+
 # set "-9999" to NA's 
 
 us.bar[us.bar == "-9999"]<- NA
@@ -33,6 +35,9 @@ us.ho1[us.ho1 == "-9999"]<- NA
 us.lph[us.lph == "-9999"]<- NA
 us.mms[us.mms == "-9999"]<- NA
 us.umb[us.umb == "-9999"]<- NA
+
+# Edit out columns we don't need
+
 
 # add a date column
 lat_Bar <- 44.06 

@@ -1,0 +1,183 @@
+---
+title: "AmeriFlux Data"
+author: "Jamie Harrison"
+date: "2/6/2017"
+output: html_document
+---
+
+```{r Set Working Directory}
+setwd("/Users/jamieharrison/Documents/BU/Spring 2017/Courses/BioGeo/CSVs")  
+getwd() 
+```
+```{r Read in US_Bar}
+US_Bar <- read.csv("US_Bar.csv", header=FALSE, stringsAsFactors=FALSE) 
+US_Bar<- US_Bar[-c(1,2),]
+
+colnames(US_Bar) = US_Bar[1, ] # the first row will be the header
+US_Bar = US_Bar[-1, ] 
+US_Bar$Timestamp<-strptime(US_Bar$TIMESTAMP_START,format="%Y%m%d%H%M")
+US_Bar$Date<-as.Date(US_Bar$Timestamp, format="%j")
+US_Bar$NEE_PI<-as.numeric(US_Bar$NEE_PI)
+US_Bar$LE<-as.numeric(US_Bar$LE)
+US_Bar[US_Bar == -9999] <- NA
+
+X=20 #set threshold to 20
+US_Bar=US_Bar[(US_Bar$SW_IN>X),]
+US_Bar$Date<-as.Date(US_Bar$Timestamp, format="%j")
+
+head(US_Bar)
+```
+
+```{r Calculations : US_Bar}
+
+US_Bar_Daily_NEE<-aggregate(NEE_PI~Date, data=US_Bar,FUN=mean) #none??
+US_Bar_Daily_LE<-aggregate(LE~Date, data=US_Bar,FUN=mean)
+
+```
+
+## COME BACK TO, NEED COORDINATES
+```{r Read in US_Ha1}
+US_Ha1 <- read.csv("US_Ha1.csv", header=FALSE, stringsAsFactors=FALSE) 
+head(US_Ha1)
+US_Ha1<- US_Ha1[-c(1,2),]
+
+colnames(US_Ha1) = US_Ha1[1, ] # the first row will be the header
+US_Ha1 = US_Ha1[-1, ] 
+US_Ha1$Timestamp<-strptime(US_Ha1$TIMESTAMP_START,format="%Y%m%d%H%M")
+US_Ha1$Date<-as.Date(US_Ha1$Timestamp, format="%j")
+US_Ha1$NEE_PI<-as.numeric(US_Ha1$NEE_PI)
+US_Ha1$LE<-as.numeric(US_Ha1$LE)
+US_Ha1[US_Ha1 == -9999] <- NA
+
+## HERE
+X=20 #set threshold to 20
+US_Ha1=US_Ha1[(US_Ha1$SW_IN>X),]
+
+head(US_Ha1)
+```
+
+```{r Calculations : US_Ha1}
+
+US_Ha1_Daily_NEE<-aggregate(NEE_PI~Date, data=US_Ha1,FUN=mean) #none??
+US_Ha1_Daily_LE<-aggregate(LE~Date, data=US_Ha1,FUN=mean)
+
+```
+
+## COME BACK TO, NEED COORDINATES
+```{r Read in US_Ha2}
+US_Ha2 <- read.csv("US_Ha2.csv", header=FALSE, stringsAsFactors=FALSE) 
+head(US_Ha2)
+US_Ha2<- US_Ha2[-c(1,2),]
+
+colnames(US_Ha2) = US_Ha2[1, ] # the first row will be the header
+US_Ha2 = US_Ha2[-1, ] 
+US_Ha2$Timestamp<-strptime(US_Ha2$TIMESTAMP_START,format="%Y%m%d%H%M")
+US_Ha2$Date<-as.Date(US_Ha2$Timestamp, format="%j")
+US_Ha2$NEE_PI<-as.numeric(US_Ha2$NEE_PI)
+US_Ha2$LE<-as.numeric(US_Ha2$LE)
+US_Ha2[US_Ha2 == -9999] <- NA
+
+#HERE
+X=20 #set threshold to 20
+US_Ha2=US_Ha2[(US_Ha2$SW_IN>X),]
+
+head(US_Ha2)
+```
+
+```{r Calculations : US_Ha2}
+
+US_Ha2_Daily_NEE<-aggregate(NEE_PI~Date, data=US_Ha2,FUN=mean) #none??
+US_Ha2_Daily_LE<-aggregate(LE~Date, data=US_Ha2,FUN=mean)
+
+```
+
+
+```{r Read in US_Ho1}
+US_Ho1 <- read.csv("US_Ho1.csv", header=FALSE, stringsAsFactors=FALSE) 
+US_Ho1<- US_Ho1[-c(1,2),]
+
+colnames(US_Ho1) = US_Ho1[1, ] # the first row will be the header
+US_Ho1 = US_Ho1[-1, ] 
+US_Ho1$Timestamp<-strptime(US_Ho1$TIMESTAMP_START,format="%Y%m%d%H%M")
+US_Ho1$Date<-as.Date(US_Ho1$Timestamp, format="%j")
+US_Ho1$Month.Yr<-format(as.Date(US_Ho1$Timestamp), "%B/%Y")
+
+US_Ho1$NEE_PI<-as.numeric(US_Ho1$NEE_PI)
+US_Ho1$LE<-as.numeric(US_Ho1$LE)
+US_Ho1[US_Ho1 == -9999] <- NA
+X=20 #set threshold to 20
+US_Ho1=US_Ho1[(US_Ho1$SW_IN>X),]
+
+head(US_Ho1)
+
+x<-table(format(US_Ho1$Date,"%m-%d-%Y"))
+x<-as.data.frame(x)
+
+Y=8
+x$Var2<-ifelse(x$Freq >Y,TRUE,FALSE)
+
+omit<-(x$Var1[x$Var2=="FALSE"])
+omit<-as.vector(omit)
+omit<-as.Date(omit,"%m-%d-%Y")
+omit
+
+US_Ho1_Filt<-US_Ho1[!US_Ho1$Date %in% omit,]
+summary(US_Ho1_Filt$Date)
+summary(omit)
+```
+
+```{r Calculations : US_Ho1}
+US_Ho1_Daily_NEE<-aggregate(NEE_PI~Date, data=US_Ho1_Filt,FUN=mean)
+US_Ho1_Daily_LE<-aggregate(LE~Date, data=US.Ho1_Filt,FUN=mean)
+
+US_Ho1_Daily<-merge(US_Ho1_Daily_LE,US_Ho1_Daily_NEE, all.x=TRUE)
+US_Ho1_Daily$Month<-format(as.Date(US_Ho1_Daily$Date), "%B")
+US_Ho1_Daily$Year<-format(as.Date(US_Ho1_Daily$Date), "%Y")
+US_Ho1_Daily$M.Y<-format(as.Date(US_Ho1_Daily$Date), "%B-%Y")
+
+```
+
+```{r}
+
+a<-table(format(US_Ho1_Daily$M.Y))
+
+a<-as.data.frame(a)
+
+b<-20 #must have 20 days of data
+a$Var2<-ifelse(a$Freq >b,TRUE,FALSE)
+a
+omit<-(a$Var1[a$Var2=="FALSE"])
+omit<-as.vector(omit)
+omit
+
+US_Ho1_Daily_Filt<-US_Ho1_Daily[!US_Ho1_Daily$M.Y %in% omit,]
+```
+
+```{r}
+US_Ho1_Monthly_NEE<-aggregate(NEE_PI~M.Y+Month+Year, data=US_Ho1_Daily_Filt,FUN=mean)
+US_Ho1_Monthly_LE<-aggregate(LE~M.Y+Month+Year, data=US_Ho1_Daily_Filt,FUN=mean)
+
+US_Ho1_Monthly<-merge(US_Ho1_Monthly_LE,US_Ho1_Monthly_NEE, all.x=TRUE)
+
+```
+
+```{r}
+#Seasonal
+#create a new variable
+US_Ho1_Monthly$Season[US_Ho1_Monthly$Month=="June"] <- "Summer"
+US_Ho1_Monthly$Season[US_Ho1_Monthly$Month=="July"] <- "Summer"
+US_Ho1_Monthly$Season[US_Ho1_Monthly$Month=="August"] <- "Summer"
+
+US_Ho1_Seasonal_NEE<-aggregate(NEE_PI[US_Ho1_Monthly$Season=="Summer"]~Year[US_Ho1_Monthly$Season=="Summer"], data=US_Ho1_Monthly,FUN=mean)
+
+US_Ho1_Seasonal_LE<-aggregate(LE[US_Ho1_Monthly$Season=="Summer"]~Year[US_Ho1_Monthly$Season=="Summer"], data=US_Ho1_Monthly,FUN=mean)
+
+US_Ho1_Seasonal<-merge(US_Ho1_Seasonal_LE,US_Ho1_Seasonal_NEE, all.x=TRUE)
+colnames(US_Ho1_Seasonal)<-c("year", "LE", "NEE")
+
+```
+
+```{r}
+plot(US_Ho1_Seasonal$NEE~US_Ho1_Seasonal$year, type="l")
+```
+

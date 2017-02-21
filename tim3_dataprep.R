@@ -83,7 +83,7 @@ Bar_HH_ready <- data.frame(cbind(as.vector(as.character(Bar_HH$Year)),as.vector(
                            ,as.vector(as.character(Bar_HH$USTAR))))
                            
 #give columns names that reasonable match those needed for REddyProc
-colnames(Bar_HH_ready) <- c("Year", "DoY", "Hour", "NEE", "LE", "H", "SW_IN","Tair", "Tsoil1", "Tsoil2","Reco",
+colnames(Bar_HH_ready) <- c("Year", "DoY", "Hour", "NEE", "LE", "H", "Rg","Tair", "Tsoil", "Tsoil2","rH",
                       "VPD","USTAR")
 
 

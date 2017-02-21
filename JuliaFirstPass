@@ -56,6 +56,8 @@ Bar_HH_ymd_t <- matrix(ncol = 1, nrow = l_Bar_HH, "NA")
 Bar_HH_full_date <- matrix(ncol = 1, nrow = l_Bar_HH, "NA")
 Bar_HH_daylight_hours <- matrix(ncol = 1, nrow = l_Bar_HH, "NA")
 Bar_HH_year <- matrix(ncol = 1, nrow = l_Bar_HH, "NA")
+Bar_HH_month <- matrix(ncol = 1, nrow = l_Bar_HH, "NA")
+Bar_HH_day <- matrix(ncol = 1, nrow = l_Bar_HH, "NA")
 Bar_HH_time <- matrix(ncol = 1, nrow = l_Bar_HH, "NA")
 Bar_HH_jd <- matrix(ncol = 1, nrow = l_Bar_HH, "NA")
 
@@ -68,11 +70,19 @@ get_daylight_hours_Bar <- function(x) {
 }
 
 get_full_date <- function(x) {
-  year <- substr(x, 1, 10)   
+  full_date <- substr(x, 1, 10)   
 }
 
 get_year_only <- function(x) {
   year <- substr(x, 1, 4)   
+}
+
+get_month_only <- function(x) {
+  month <- substr(x, 6, 7)   
+}
+
+get_day_only <- function(x) {
+  day <- substr(x, 9, 10)   
 }
 
 get_time_only <- function(x) {
@@ -87,11 +97,13 @@ Bar_HH_ymd_t <- lapply(Bar_HH_date_time, format_date_time)
 Bar_HH_full_date <- lapply(Bar_HH_ymd_t, get_full_date)
 Bar_HH_daylight_hours <- lapply(Bar_HH_dates, get_daylight_hours_Bar)
 Bar_HH_year <- lapply(Bar_HH_dates, get_year_only)
+Bar_HH_month <- lapply(Bar_HH_dates, get_month_only)
+Bar_HH_day <- lapply(Bar_HH_dates, get_day_only)
 Bar_HH_time <- lapply(Bar_HH_dates, get_time_only)
 Bar_HH_jd <- lapply(Bar_HH_dates, get_jd_only)
 
-Bar_HH_complete <- cbind(Bar_HH_subset, unlist(Bar_HH_full_date), unlist(Bar_HH_daylight_hours), unlist(Bar_HH_year), unlist(Bar_HH_jd), unlist(Bar_HH_time))
-colnames(Bar_HH_complete) <- c("TIMESTAMP_START", "air_temp", "nee", "latent_heat", "soil_temp_1", "soil_temp_2", "vpd", "solar_rad", "date", "daylength", "year", "julian_date", "time")
+Bar_HH_complete <- cbind(Bar_HH_subset, unlist(Bar_HH_full_date), unlist(Bar_HH_daylight_hours), unlist(Bar_HH_year), unlist(Bar_HH_month), unlist(Bar_HH_day), unlist(Bar_HH_jd), unlist(Bar_HH_time))
+colnames(Bar_HH_complete) <- c("TIMESTAMP_START", "air_temp", "nee", "latent_heat", "soil_temp_1", "soil_temp_2", "vpd", "solar_rad", "date", "daylength", "year", "month", "day", "julian_date", "time")
 ```
 
 Starting here, lots of clunky stuff for all 8 sites:

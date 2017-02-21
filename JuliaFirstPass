@@ -1,0 +1,375 @@
+
+Read in Ameriflux data:
+```{r, warning = FALSE}
+setwd("/Users/juliamarrs/Documents/Biogeoscience_Practicum/Ameriflux/")
+
+ameriflux <- list.files(pattern = "\\.csv")
+
+for (a in 1:length(ameriflux)) {
+  assign(paste0(substr(basename(ameriflux[a]), 8, 10), "_",
+                substr(basename(ameriflux[a]), 17, 18), "_all"), 
+                read.csv(ameriflux[a], header = TRUE, sep = ",", skip = 2))
+}
+```
+
+** don't use gap-filled data and remove corresponding value from other variable when there is a missing value
+** only use days with 8 or more hours of good data -- make this an adjustable variable, though - we will probably mess around with this later!
+
+will eventually need nighttime averages, but respiration script might do this on its own
+
+Remove columns with just NA values (and then do na.omit at some point but need to know which columns we're going to end up needing - otherwise, end up omitting every row...):
+
+Minimum columns needed for partitioning: 
+For partitioning: 'Year', 'DoY', 'Hour', 'NEE', 'Rg', and temperature variable ('Tair', 'Tsoil' or other)
+- make year, DOY, hour columns
+- NEE = NEE_PI
+- Rg = SW_IN
+- temperatures = TS_1,TS_2, TA (2 soil, 1 air temp)
+
+To reproduce Keenan figures, we also want:
+- latent heat flux = LE
+- vapor pressure defecit = VPD_PI
+
+Baby example with first 4 days for Bar_HH site:
+```{r}
+require(lubridate)
+require(geosphere)
+
+Bar_HH <- read.csv("/Users/juliamarrs/Documents/Biogeoscience_Practicum/Ameriflux/AMF_US-Bar_BASE_HH_4-1.csv", skip = 2)
+
+Bar_HH <- data.frame(cbind(Bar_HH$TIMESTAMP_START, Bar_HH$TA, Bar_HH$NEE_PI, Bar_HH$LE, Bar_HH$TS_1, Bar_HH$TS_2, Bar_HH$VPD_PI, Bar_HH$SW_IN))
+colnames(Bar_HH) <- c("TIMESTAMP_START", "air_temp", "nee", "latent_heat", "soil_temp_1", "soil_temp_2", "vpd", "solar_rad")
+Bar_HH_subset <- Bar_HH[1:192,]
+Bar_HH_subset[Bar_HH_subset == "-9999"] <- NA
+
+Bar_HH_date_time <- as.vector(as.character(Bar_HH_subset[,1]))
+
+l_Bar_HH <- length(Bar_HH_subset[,1])
+lat_Bar <- 44.06
+day_threshold <- 20 # W m-2
+half_hours_day_threshold <- 16 # half hours
+hours_day_threshold <- 8 # hours
+days_month_threshold <- 20 # days
+months_season_threshold <- 2 # months
+
+Bar_HH_ymd_t <- matrix(ncol = 1, nrow = l_Bar_HH, "NA")
+Bar_HH_full_date <- matrix(ncol = 1, nrow = l_Bar_HH, "NA")
+Bar_HH_daylight_hours <- matrix(ncol = 1, nrow = l_Bar_HH, "NA")
+Bar_HH_year <- matrix(ncol = 1, nrow = l_Bar_HH, "NA")
+Bar_HH_time <- matrix(ncol = 1, nrow = l_Bar_HH, "NA")
+Bar_HH_jd <- matrix(ncol = 1, nrow = l_Bar_HH, "NA")
+
+format_date_time <- function(x) {
+  ymd_hm_dates <- ymd_hm(as.character(x))
+}
+
+get_daylight_hours_Bar <- function(x) {
+  daylight_hours <- daylength(lat_Bar, substr(x, 1, 11))  
+}
+
+get_full_date <- function(x) {
+  year <- substr(x, 1, 10)   
+}
+
+get_year_only <- function(x) {
+  year <- substr(x, 1, 4)   
+}
+
+get_time_only <- function(x) {
+  time <- substr(x, 12, 16)   
+}
+
+get_jd_only <- function(x) {
+  jd <- yday(x)   
+}
+
+Bar_HH_ymd_t <- lapply(Bar_HH_date_time, format_date_time)
+Bar_HH_full_date <- lapply(Bar_HH_ymd_t, get_full_date)
+Bar_HH_daylight_hours <- lapply(Bar_HH_dates, get_daylight_hours_Bar)
+Bar_HH_year <- lapply(Bar_HH_dates, get_year_only)
+Bar_HH_time <- lapply(Bar_HH_dates, get_time_only)
+Bar_HH_jd <- lapply(Bar_HH_dates, get_jd_only)
+
+Bar_HH_complete <- cbind(Bar_HH_subset, unlist(Bar_HH_full_date), unlist(Bar_HH_daylight_hours), unlist(Bar_HH_year), unlist(Bar_HH_jd), unlist(Bar_HH_time))
+colnames(Bar_HH_complete) <- c("TIMESTAMP_START", "air_temp", "nee", "latent_heat", "soil_temp_1", "soil_temp_2", "vpd", "solar_rad", "date", "daylength", "year", "julian_date", "time")
+```
+
+Starting here, lots of clunky stuff for all 8 sites:
+```{r}
+Bar_HH <- data.frame(cbind(Bar_HH_all$TIMESTAMP_START, Bar_HH_all$TA, Bar_HH_all$NEE_PI, Bar_HH_all$LE, Bar_HH_all$TS_1, Bar_HH_all$TS_2, Bar_HH_all$VPD_PI, Bar_HH_all$SW_IN))
+Ha1_HR <- data.frame(cbind(Ha1_HR_all$TIMESTAMP_START, Ha1_HR_all$TA, Ha1_HR_all$NEE_PI, Ha1_HR_all$LE, Ha1_HR_all$TS_1, Ha1_HR_all$TS_2, Ha1_HR_all$VPD_PI, Ha1_HR_all$SW_IN))
+Ha2_HH <- data.frame(cbind(Ha2_HH_all$TIMESTAMP_START, Ha2_HH_all$TA, Ha2_HH_all$NEE_PI, Ha2_HH_all$LE, Ha2_HH_all$TS_1, Ha2_HH_all$TS_2, Ha2_HH_all$VPD_PI, Ha2_HH_all$SW_IN))
+Ho1_HH <- data.frame(cbind(Ho1_HH_all$TIMESTAMP_START, Ho1_HH_all$TA, Ho1_HH_all$NEE_PI, Ho1_HH_all$LE, Ho1_HH_all$TS_1, Ho1_HH_all$TS_2, Ho1_HH_all$VPD_PI, Ho1_HH_all$SW_IN))
+LPH_HH <- data.frame(cbind(LPH_HH_all$TIMESTAMP_START, LPH_HH_all$TA, LPH_HH_all$NEE_PI, LPH_HH_all$LE, LPH_HH_all$TS_1, LPH_HH_all$TS_2, LPH_HH_all$VPD_PI, LPH_HH_all$SW_IN))
+MMS_HR <- data.frame(cbind(MMS_HR_all$TIMESTAMP_START, MMS_HR_all$TA, MMS_HR_all$NEE_PI, MMS_HR_all$LE, MMS_HR_all$TS_1, MMS_HR_all$TS_2, MMS_HR_all$VPD_PI, MMS_HR_all$SW_IN))
+UMB_HH <- data.frame(cbind(UMB_HH_all$TIMESTAMP_START, UMB_HH_all$TA, UMB_HH_all$NEE_PI, UMB_HH_all$LE, UMB_HH_all$TS_1, UMB_HH_all$TS_2, UMB_HH_all$VPD_PI, UMB_HH_all$SW_IN))
+UMB_HR <- data.frame(cbind(UMB_HR_all$TIMESTAMP_START, UMB_HR_all$TA, UMB_HR_all$NEE_PI, UMB_HR_all$LE, UMB_HR_all$TS_1, UMB_HR_all$TS_2, UMB_HR_all$VPD_PI, UMB_HR_all$SW_IN))
+
+colnames(Bar_HH) <- c("TIMESTAMP_START", "air_temp", "nee", "latent_heat", "soil_temp_1", "soil_temp_2", "vpd", "solar_rad")
+colnames(Ha1_HR) <- c("TIMESTAMP_START", "air_temp", "nee", "latent_heat", "soil_temp_1", "soil_temp_2", "vpd", "solar_rad")
+colnames(Ha2_HH) <- c("TIMESTAMP_START", "air_temp", "nee", "latent_heat", "soil_temp_1", "soil_temp_2", "vpd", "solar_rad")
+colnames(Ho1_HH) <- c("TIMESTAMP_START", "air_temp", "nee", "latent_heat", "soil_temp_1", "soil_temp_2", "vpd", "solar_rad")
+colnames(LPH_HH) <- c("TIMESTAMP_START", "air_temp", "nee", "latent_heat", "soil_temp_1", "soil_temp_2", "vpd", "solar_rad")
+colnames(MMS_HR) <- c("TIMESTAMP_START", "air_temp", "nee", "latent_heat", "soil_temp_1", "soil_temp_2", "vpd", "solar_rad")
+colnames(UMB_HH) <- c("TIMESTAMP_START", "air_temp", "nee", "latent_heat", "soil_temp_1", "soil_temp_2", "vpd", "solar_rad")
+colnames(UMB_HR) <- c("TIMESTAMP_START", "air_temp", "nee", "latent_heat", "soil_temp_1", "soil_temp_2", "vpd", "solar_rad")
+
+Bar_HH[Bar_HH == "-9999"] <- NA
+Ha1_HR[Ha1_HR == "-9999"] <- NA
+Ha2_HH[Ha2_HH == "-9999"] <- NA
+Ho1_HH[Ho1_HH == "-9999"] <- NA
+LPH_HH[LPH_HH == "-9999"] <- NA
+MMS_HR[MMS_HR == "-9999"] <- NA
+UMB_HH[UMB_HH == "-9999"] <- NA
+UMB_HR[UMB_HR == "-9999"] <- NA
+```
+
+Old na removal method - not working great...
+```{r}
+US_Bar_HH[US_Bar_HH == "-9999"] <- NA
+US_Bar_HH <- Filter(function(x)!all(is.na(x)), US_Bar_HH)
+#US_Bar_HH <- na.omit(US_Bar_HH)
+
+US_Ha1_HR[US_Ha1_HR == "-9999"] <- NA
+US_Ha1_HR <- Filter(function(x)!all(is.na(x)), US_Ha1_HR)
+#US_Ha1_HR <- na.omit(US_Ha1_HR)
+
+US_Ha2_HH[US_Ha2_HH == "-9999"] <- NA
+US_Ha2_HH <- Filter(function(x)!all(is.na(x)), US_Ha2_HH)
+#US_Ha2_HH <- na.omit(US_Ha2_HH)
+
+US_Ho1_HH[US_Ho1_HH == "-9999"] <- NA
+US_Ho1_HH <- Filter(function(x)!all(is.na(x)), US_Ho1_HH)
+#US_Ho1_HH <- na.omit(US_Ho1_HH)
+
+US_LPH_HH[US_LPH_HH == "-9999"] <- NA
+US_LPH_HH <- Filter(function(x)!all(is.na(x)), US_LPH_HH)
+#US_LPH_HH <- na.omit(US_LPH_HH)
+
+US_MMS_HR[US_MMS_HR == "-9999"] <- NA
+US_MMS_HR <- Filter(function(x)!all(is.na(x)), US_MMS_HR)
+#US_MMS_HR <- na.omit(US_MMS_HR)
+
+US_UMB_HH[US_UMB_HH == "-9999"] <- NA
+US_UMB_HH <- Filter(function(x)!all(is.na(x)), US_UMB_HH)
+#US_UMB_HH <- na.omit(US_UMB_HH)
+
+US_UMB_HR[US_UMB_HR == "-9999"] <- NA
+US_UMB_HR <- Filter(function(x)!all(is.na(x)), US_UMB_HR)
+#US_UMB_HR <- na.omit(US_UMB_HR)
+```
+
+```{r}
+require(lubridate)
+
+Bar_HH_date_time <- as.vector(as.character(Bar_HH[,1]))
+Ha1_HR_date_time <- as.vector(as.character(Ha1_HR[,1]))
+Ha2_HH_date_time <- as.vector(as.character(Ha2_HH[,1]))
+Ho1_HH_date_time <- as.vector(as.character(Ho1_HH[,1]))
+LPH_HH_date_time <- as.vector(as.character(LPH_HH[,1]))
+MMS_HR_date_time <- as.vector(as.character(MMS_HR[,1]))
+UMB_HH_date_time <- as.vector(as.character(UMB_HH[,1]))
+UMB_HR_date_time <- as.vector(as.character(UMB_HR[,1]))
+
+l_Bar_HH <- length(Bar_HH[,1])
+l_Ha1_HR <- length(Ha1_HR[,1])
+l_Ha2_HH <- length(Ha2_HH[,1])
+l_Ho1_HH <- length(Ho1_HH[,1])
+l_LPH_HH <- length(LPH_HH[,1])
+l_MMS_HR <- length(MMS_HR[,1])
+l_UMB_HH <- length(UMB_HH[,1])
+l_UMB_HR <- length(UMB_HR[,1])
+
+Bar_HH_dates <- matrix(ncol = 1, nrow = l_Bar_HH, "NA")
+Ha1_HR_dates <- matrix(ncol = 1, nrow = l_Ha1_HR, "NA")
+Ha2_HH_dates <- matrix(ncol = 1, nrow = l_Ha2_HH, "NA")
+Ho1_HH_dates <- matrix(ncol = 1, nrow = l_Ho1_HH, "NA")
+LPH_HH_dates <- matrix(ncol = 1, nrow = l_LPH_HH, "NA")
+MMS_HR_dates <- matrix(ncol = 1, nrow = l_MMS_HR, "NA")
+UMB_HH_dates <- matrix(ncol = 1, nrow = l_UMB_HH, "NA")
+UMB_HR_dates <- matrix(ncol = 1, nrow = l_UMB_HR, "NA")
+
+format_date_time <- function(x) {
+  ymd_hm_dates <- ymd_hm(as.character(x))
+}
+
+Bar_HH_dates <- lapply(Bar_HH_date_time, format_date_time)
+Ha1_HR_dates <- lapply(Ha1_HR_date_time, format_date_time)
+Ha2_HH_dates <- lapply(Ha2_HH_date_time, format_date_time)
+Ho1_HH_dates <- lapply(Ho1_HH_date_time, format_date_time)
+LPH_HH_dates <- lapply(LPH_HH_date_time, format_date_time)
+MMS_HR_dates <- lapply(MMS_HR_date_time, format_date_time)
+UMB_HH_dates <- lapply(UMB_HH_date_time, format_date_time)
+UMB_HR_dates <- lapply(UMB_HR_date_time, format_date_time)
+```
+
+incoming solar radiation flux (column name PPFD_IN) -- must be greater than 20 W/m2 to count as "day"
+** for sites without this, use conversion with Julian date to convert back
+
+#US_Bar_HH_day <- subset(US_Bar_HH, LE > day_threshold)
+#daytime <- lapply(sites, function(x)x[x$LE > day_threshold,])
+
+Will need latitude of each site (from Keenan et al. supplementary info)
+```{r}
+lat_Bar <- 44.06
+lat_Ha_LPH <- 42.54
+lat_Ho <- 45.20
+lat_MMS <- 39.32
+lat_UMB <- 45.56
+```
+
+Get daylength, year, time:
+```{r}
+require(geosphere)
+
+Bar_HH_daylight_hours <- matrix(ncol = 1, nrow = l_Bar_HH, "NA")
+Ha1_HR_daylight_hours <- matrix(ncol = 1, nrow = l_Ha1_HR, "NA")
+Ha2_HH_daylight_hours <- matrix(ncol = 1, nrow = l_Ha2_HH, "NA")
+Ho1_HH_daylight_hours <- matrix(ncol = 1, nrow = l_Ho1_HH, "NA")
+LPH_HH_daylight_hours <- matrix(ncol = 1, nrow = l_LPH_HH, "NA")
+MMS_HR_daylight_hours <- matrix(ncol = 1, nrow = l_MMS_HR, "NA")
+UMB_HH_daylight_hours <- matrix(ncol = 1, nrow = l_UMB_HH, "NA")
+UMB_HR_daylight_hours <- matrix(ncol = 1, nrow = l_UMB_HR, "NA")
+
+get_daylight_hours_Bar <- function(x) {
+  daylight_hours <- daylength(lat_Bar, substr(x, 1, 11))  
+}
+
+get_daylight_hours_Ha_LPH <- function(x) {
+  daylight_hours <- daylength(lat_Ha_LPH, substr(x, 1, 11))  
+}
+
+get_daylight_hours_Ho <- function(x) {
+  daylight_hours <- daylength(lat_Ho, substr(x, 1, 11))  
+}
+
+get_daylight_hours_MMS <- function(x) {
+  daylight_hours <- daylength(lat_MMS, substr(x, 1, 11))  
+}
+
+get_daylight_hours_UMB <- function(x) {
+  daylight_hours <- daylength(lat_UMB, substr(x, 1, 11))  
+}
+
+Bar_HH_daylight_hours <- lapply(Bar_HH_dates, get_daylight_hours_Bar)
+Ha1_HR_daylight_hours <- lapply(Ha1_HR_dates, get_daylight_hours_Ha_LPH)
+Ha2_HH_daylight_hours <- lapply(Ha2_HH_dates, get_daylight_hours_Ha_LPH)
+Ho1_HH_daylight_hours <- lapply(Ho1_HH_dates, get_daylight_hours_Ho)
+LPH_HH_daylight_hours <- lapply(LPH_HH_dates, get_daylight_hours_Ha_LPH)
+MMS_HR_daylight_hours <- lapply(MMS_HR_dates, get_daylight_hours_MMS)
+UMB_HH_daylight_hours <- lapply(UMB_HH_dates, get_daylight_hours_UMB)
+UMB_HR_daylight_hours <- lapply(UMB_HR_dates, get_daylight_hours_UMB)
+```
+
+```{r}
+Bar_HH_year <- matrix(ncol = 1, nrow = l_Bar_HH, "NA")
+Ha1_HR_year <- matrix(ncol = 1, nrow = l_Ha1_HR, "NA")
+Ha2_HH_year <- matrix(ncol = 1, nrow = l_Ha2_HH, "NA")
+Ho1_HH_year <- matrix(ncol = 1, nrow = l_Ho1_HH, "NA")
+LPH_HH_year <- matrix(ncol = 1, nrow = l_LPH_HH, "NA")
+MMS_HR_year <- matrix(ncol = 1, nrow = l_MMS_HR, "NA")
+UMB_HH_year <- matrix(ncol = 1, nrow = l_UMB_HH, "NA")
+UMB_HR_year <- matrix(ncol = 1, nrow = l_UMB_HR, "NA")
+
+get_year_only <- function(x) {
+  year <- substr(x, 1, 4)   
+}
+
+Bar_HH_year <- lapply(Bar_HH_dates, get_year_only)
+Ha1_HR_year <- lapply(Ha1_HR_dates, get_year_only)
+Ha2_HH_year <- lapply(Ha2_HH_dates, get_year_only)
+Ho1_HH_year <- lapply(Ho1_HH_dates, get_year_only)
+LPH_HH_year <- lapply(LPH_HH_dates, get_year_only)
+MMS_HR_year <- lapply(MMS_HR_dates, get_year_only)
+UMB_HH_year <- lapply(UMB_HH_dates, get_year_only)
+UMB_HR_year <- lapply(UMB_HR_dates, get_year_only)
+```
+
+```{r}
+Bar_HH_time <- matrix(ncol = 1, nrow = l_Bar_HH, "NA")
+Ha1_HR_time <- matrix(ncol = 1, nrow = l_Ha1_HR, "NA")
+Ha2_HH_time <- matrix(ncol = 1, nrow = l_Ha2_HH, "NA")
+Ho1_HH_time <- matrix(ncol = 1, nrow = l_Ho1_HH, "NA")
+LPH_HH_time <- matrix(ncol = 1, nrow = l_LPH_HH, "NA")
+MMS_HR_time <- matrix(ncol = 1, nrow = l_MMS_HR, "NA")
+UMB_HH_time <- matrix(ncol = 1, nrow = l_UMB_HH, "NA")
+UMB_HR_time <- matrix(ncol = 1, nrow = l_UMB_HR, "NA")
+
+get_time_only <- function(x) {
+  time <- substr(x, 12, 16)   
+}
+
+Bar_HH_time <- lapply(Bar_HH_dates, get_time_only)
+Ha1_HR_time <- lapply(Ha1_HR_dates, get_time_only)
+Ha2_HH_time <- lapply(Ha2_HH_dates, get_time_only)
+Ho1_HH_time <- lapply(Ho1_HH_dates, get_time_only)
+LPH_HH_time <- lapply(LPH_HH_dates, get_time_only)
+MMS_HR_time <- lapply(MMS_HR_dates, get_time_only)
+UMB_HH_time <- lapply(UMB_HH_dates, get_time_only)
+UMB_HR_time <- lapply(UMB_HR_dates, get_time_only)
+```
+
+Get Julian date:
+```{r}
+require(lubridate)
+
+Bar_HH_jd <- matrix(ncol = 1, nrow = l_Bar_HH, "NA")
+Ha1_HR_jd <- matrix(ncol = 1, nrow = l_Ha1_HR, "NA")
+Ha2_HH_jd <- matrix(ncol = 1, nrow = l_Ha2_HH, "NA")
+Ho1_HH_jd <- matrix(ncol = 1, nrow = l_Ho1_HH, "NA")
+LPH_HH_jd <- matrix(ncol = 1, nrow = l_LPH_HH, "NA")
+MMS_HR_jd <- matrix(ncol = 1, nrow = l_MMS_HR, "NA")
+UMB_HH_jd <- matrix(ncol = 1, nrow = l_UMB_HH, "NA")
+UMB_HR_jd <- matrix(ncol = 1, nrow = l_UMB_HR, "NA")
+
+get_jd_only <- function(x) {
+  jd <- yday(x)   
+}
+
+Bar_HH_jd <- lapply(Bar_HH_dates, get_jd_only)
+Ha1_HR_jd <- lapply(Ha1_HR_dates, get_jd_only)
+Ha2_HH_jd <- lapply(Ha2_HH_dates, get_jd_only)
+Ho1_HH_jd <- lapply(Ho1_HH_dates, get_jd_only)
+LPH_HH_jd <- lapply(LPH_HH_dates, get_jd_only)
+MMS_HR_jd <- lapply(MMS_HR_dates, get_jd_only)
+UMB_HH_jd <- lapply(UMB_HH_dates, get_jd_only)
+UMB_HR_jd <- lapply(UMB_HR_dates, get_jd_only)
+```
+
+Bind onto 8-variable dataframe from above, write vectors/dataframes to file and clean up:
+```{r}
+write.csv(Bar_HH_dates, file = "/Users/juliamarrs/Documents/Biogeoscience_Practicum/Ameriflux/Bar_HH_dates.csv")
+
+Bar_HH_complete <- cbind(Bar_HH, Bar_HH_daylight_hours, Bar_HH_year, Bar_HH_jd, Bar_HH_time)
+```
+
+```{r}
+Ha1_HR_complete <- cbind(Ha1_HR, Ha1_HR_daylight_hours, Ha1_HR_year, Ha1_HR_jd, Ha1_HR_time)
+Ha2_HH_complete <- cbind(Ha2_HH, Ha2_HH_daylight_hours, Ha2_HH_year, Ha2_HH_jd, Ha2_HH_time)
+Ho1_HH_complete <- cbind(Ho1_HH, Ho1_HH_daylight_hours, Ho1_HH_year, Ho1_HH_jd, Ho1_HH_time)
+LPH_HH_complete <- cbind(LPH_HH, LPH_HH_daylight_hours, LPH_HH_year, LPH_HH_jd, LPH_HH_time)
+MMS_HR_complete <- cbind(MMS_HR, MMS_HR_daylight_hours, MMS_HR_year, MMS_HR_jd, MMS_HR_time)
+UMB_HH_complete <- cbind(UMB_HH, UMB_HH_daylight_hours, UMB_HH_year, UMB_HH_jd, UMB_HH_time)
+UMB_HR_complete <- cbind(UMB_HR, UMB_HR_daylight_hours, UMB_HR_year, UMB_HR_jd, UMB_HR_time)
+```
+
+make parameters for day/night threshold (20 W/m2), half-hours for "good" day (16), how many days count for a month (if instruments go out) (?), how many months for a season (?)
+
+```{r}
+day_threshold <- 20 # W m-2
+half_hours_day_threshold <- 16 # half hours
+hours_day_threshold <- 8 # hours
+days_month_threshold <- 20 # days
+months_season_threshold <- 2 # months
+```
+
+Get daytime averages, then average those to monthly fluxes, then average those to JJA totals
+
+I was thinking of using data.table, but this is giving me a little trouble: 
+```{r}
+require(data.table)
+
+bar_hh <- data.table(Bar_HH_complete)
+
+bar_hh[, list(avg_air_temp = (sum(air_temp) / 48), tot_nee = sum(nee), tot_le = sum(latent_heat), avg_st1 = (sum(soil_temp_1) / 48), avg_st2 = (sum(soil_temp_2) / 48), avg_vpd = (sum(vpd) / 48), day_hrs = sum(solar_rad)), by = as.Date(date, format="%y/%m/%d")]
+```

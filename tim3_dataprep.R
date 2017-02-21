@@ -69,7 +69,7 @@ Bar_HH$Hour<-substr(Bar_HH$TIMESTAMP,9,10)
 Bar_HH$Minute<-substr(Bar_HH$TIMESTAMP,11,12)
 Bar_HH$Minute<-as.numeric(as.character(Bar_HH$Minute)) * (.5/30)
 #add minutes back onto hours to get proper formatting for REddyProc
-Bar_HH$Hour<-as.numeric(as.character(Bar_HH$Hour))+as.numeric(as.character(Bar_HH$Minute))
+Bar_HH$Hour<-(as.numeric(as.character(Bar_HH$Hour))+as.numeric(as.character(Bar_HH$Minute)))+0.5
 
 
 ############ Convert table to match Data input format for REddyProc
@@ -85,25 +85,6 @@ Bar_HH_ready <- data.frame(cbind(as.vector(as.character(Bar_HH$Year)),as.vector(
 #give columns names that reasonable match those needed for REddyProc
 colnames(Bar_HH_ready) <- c("Year", "DoY", "Hour", "NEE", "LE", "H", "SW_IN","Tair", "Tsoil1", "Tsoil2","Reco",
                       "VPD","USTAR")
-
-
-
-
-
-
-
-
-
-
-
-#
-
-
-
-
-
-
-
 
 
 

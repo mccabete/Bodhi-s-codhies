@@ -20,6 +20,7 @@ us.mms<-read.csv("AMF_US-MMS_BASE_HR_8-1.csv", header = TRUE)
 us.umb<-read.csv("AMF_US-UMB_BASE_HR_10-1.csv", header = TRUE)
 
 # Thresholds
+
 day_length<- 16 # half hours
 swr<- 20
 DOM <- 20 # Days in A Month

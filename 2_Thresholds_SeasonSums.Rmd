@@ -1,0 +1,86 @@
+---
+title: "2_Thresholds_SeasonalSums"
+author: "Jamie Harrison"
+date: "2/21/2017"
+output: html_document
+---
+
+```{r Filter out nighttime}
+Ho1_HH<-Ho1_HH_1_
+Ho1_HH[Ho1_HH == -9999] <- NA
+
+ThSW=20 #set threshold to 20 volts for SWR
+summary(Ho1_HH$Rg)
+Ho1_HH<- subset(Ho1_HH,Rg>ThSW)
+summary(Ho1_HH$Rg)
+
+```
+```{r Filter out days}
+x<-table(format(Ho1_HH$Date1))
+x<-as.data.frame(x)
+x #Note: Variable 1 is your Date and Freq is the frequency of that date in the df
+ThDay=4 #eight observations in a day
+x$Var2<-ifelse(x$Freq >ThDay,TRUE,FALSE) #Make a Var2, does the date meet our threshold?
+x
+summary(x$Var2)
+omit<-(x$Var1[x$Var2=="FALSE"])
+omit<-as.vector(omit)
+omit<-as.Date(omit,"%m-%d-%Y")
+omit
+Ho1_HH$Date1<-as.Date(Ho1_HH$Date1,"%m-%d-%Y")
+Ho1_HH_Filt<-Ho1_HH[!Ho1_HH$Date1 %in% omit,]
+Ho1_HH_Filt$Date1<-as.Date(Ho1_HH_Filt$Date1,"%m-%d-%Y")
+summary(Ho1_HH_Filt$Date1)
+summary(Ho1_HH$Date1)
+
+```
+
+```{r Daily means}
+Ho1_HH_Daily_NEE<-aggregate(NEE~DoY+Month+Year+Date2, data=Ho1_HH_Filt,FUN=mean)
+Ho1_HH_Daily_LE<-aggregate(LE~DoY+Month+Year+Date2, data=Ho1_HH_Filt,FUN=mean)
+
+Ho1_HH_Daily<-merge(Ho1_HH_Daily_NEE,Ho1_HH_Daily_LE, all.x=TRUE)
+```
+
+```{r}
+
+ThDays<-15 #must have 15 days of data
+
+a<-table(format(Ho1_HH_Daily$Date2))
+a<-as.data.frame(a)
+
+a$Var2<-ifelse(a$Freq >ThDays,TRUE,FALSE)
+a
+
+omit<-(a$Var1[a$Var2=="FALSE"])
+summary(a$Var2)
+
+omit<-as.vector(omit)
+omit
+
+Ho1_HH_Daily_Filt<-Ho1_HH_Daily[!Ho1_HH_Daily$Date2 %in% omit,]
+```
+
+```{r}
+Ho1_HH_Monthly_NEE<-aggregate(NEE~Date2+Month+Year, data=Ho1_HH_Daily_Filt,FUN=mean)
+Ho1_HH_Monthly_LE<-aggregate(LE~Date2+Month+Year, data=Ho1_HH_Daily_Filt,FUN=mean)
+
+Ho1_HH_Monthly<-merge(Ho1_HH_Monthly_LE,Ho1_HH_Monthly_NEE, all.x=TRUE)
+
+```
+
+```{r}
+#Seasonal
+#create a new variable
+Ho1_HH_Monthly$Season[Ho1_HH_Monthly$Month=="06"] <- "Summer"
+Ho1_HH_Monthly$Season[Ho1_HH_Monthly$Month=="07"] <- "Summer"
+Ho1_HH_Monthly$Season[Ho1_HH_Monthly$Month=="08"] <- "Summer"
+
+Ho1_HH_Seasonal_NEE<-aggregate(NEE[Ho1_HH_Monthly$Season=="Summer"]~Year[Ho1_HH_Monthly$Season=="Summer"], data=Ho1_HH_Monthly,FUN=mean)
+
+Ho1_HH_Seasonal_LE<-aggregate(LE[Ho1_HH_Monthly$Season=="Summer"]~Year[Ho1_HH_Monthly$Season=="Summer"], data=Ho1_HH_Monthly,FUN=mean)
+
+US_Ho1_Seasonal<-merge(Ho1_HH_Seasonal_LE,Ho1_HH_Seasonal_NEE, all.x=TRUE)
+colnames(US_Ho1_Seasonal)<-c("year", "LE", "NEE")
+
+```

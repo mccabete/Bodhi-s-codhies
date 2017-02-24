@@ -22,7 +22,7 @@ Ho1_HH <- read.csv('AMF_US-Ho1_BASE_HH_4-1.csv', skip = 2)
 
 
 #get needed data out of table and emliminate rest
-Bar_HH <- data.frame(cbind(as.vector(as.character(Bar_HH$TIMESTAMP_START)), Bar_HH$NEE_PI, 
+Bar_HH <- data.frame(cbind(as.vector(as.character(Bar_HH$TIMESTAMP_START)), Bar_HH$FC, 
                            Bar_HH$LE, Bar_HH$H, Bar_HH$SW_IN, Bar_HH$TA, Bar_HH$TS_1, 
                            Bar_HH$TS_2, Bar_HH$RECO_PI, Bar_HH$VPD_PI, Bar_HH$USTAR))
 
@@ -116,7 +116,7 @@ write.csv(Bar_HH_ready,"C:/Users/condo/Documents/assignments/biogeo_practicum/fl
 #############################################################################################
 
 #get needed data out of table and emliminate rest
-Ho1_HH <- data.frame(cbind(as.vector(as.character(Ho1_HH$TIMESTAMP_START)), Ho1_HH$NEE_PI, 
+Ho1_HH <- data.frame(cbind(as.vector(as.character(Ho1_HH$TIMESTAMP_START)), Ho1_HH$FC, 
                            Ho1_HH$LE, Ho1_HH$H, Ho1_HH$SW_IN, Ho1_HH$TA, Ho1_HH$TS_1, 
                            Ho1_HH$TS_2, Ho1_HH$RECO_PI, Ho1_HH$VPD_PI, Ho1_HH$USTAR))
 
@@ -211,7 +211,7 @@ write.csv(Ho1_HH_ready,"C:/Users/condo/Documents/assignments/biogeo_practicum/fl
 #######################################################################################
 
 #get needed data out of table and emliminate rest
-Ha1_HR <- data.frame(cbind(as.vector(as.character(Ha1_HR$TIMESTAMP_START)), Ha1_HR$NEE_PI, 
+Ha1_HR <- data.frame(cbind(as.vector(as.character(Ha1_HR$TIMESTAMP_START)), Ha1_HR$FC, 
                            Ha1_HR$LE, Ha1_HR$H, Ha1_HR$SW_IN, Ha1_HR$TA, Ha1_HR$TS_1, 
                            Ha1_HR$TS_2, Ha1_HR$RECO_PI, Ha1_HR$VPD_PI, Ha1_HR$USTAR))
 
@@ -305,7 +305,7 @@ write.csv(Ha1_HR_ready,"C:/Users/condo/Documents/assignments/biogeo_practicum/fl
 #######################################################################################
 
 #get needed data out of table and emliminate rest
-Ha2_HH <- data.frame(cbind(as.vector(as.character(Ha2_HH$TIMESTAMP_START)), Ha2_HH$NEE_PI, 
+Ha2_HH <- data.frame(cbind(as.vector(as.character(Ha2_HH$TIMESTAMP_START)), Ha2_HH$FC, 
                            Ha2_HH$LE, Ha2_HH$H, Ha2_HH$SW_IN, Ha2_HH$TA, Ha2_HH$TS_1, 
                            Ha2_HH$TS_2, Ha2_HH$RECO_PI, Ha2_HH$VPD_PI, Ha2_HH$USTAR))
 
@@ -399,7 +399,7 @@ write.csv(Ha2_HH_ready,"C:/Users/condo/Documents/assignments/biogeo_practicum/fl
 #######################################################################################
 
 #get needed data out of table and emliminate rest
-LPH_HH <- data.frame(cbind(as.vector(as.character(LPH_HH$TIMESTAMP_START)), LPH_HH$NEE_PI, 
+LPH_HH <- data.frame(cbind(as.vector(as.character(LPH_HH$TIMESTAMP_START)), LPH_HH$FC, 
                            LPH_HH$LE, LPH_HH$H, LPH_HH$SW_IN, LPH_HH$TA, LPH_HH$TS_1, 
                            LPH_HH$TS_2, LPH_HH$RECO_PI, LPH_HH$VPD_PI, LPH_HH$USTAR))
 
@@ -493,7 +493,7 @@ write.csv(LPH_HH_ready,"C:/Users/condo/Documents/assignments/biogeo_practicum/fl
 ########################################################################################
 
 #get needed data out of table and emliminate rest
-MMS_HR <- data.frame(cbind(as.vector(as.character(MMS_HR$TIMESTAMP_START)), MMS_HR$NEE_PI, 
+MMS_HR <- data.frame(cbind(as.vector(as.character(MMS_HR$TIMESTAMP_START)), MMS_HR$FC, 
                            MMS_HR$LE, MMS_HR$H, MMS_HR$SW_IN, MMS_HR$TA, MMS_HR$TS_1, 
                            MMS_HR$TS_2, MMS_HR$RECO_PI, MMS_HR$VPD_PI, MMS_HR$USTAR))
 
@@ -587,7 +587,7 @@ write.csv(MMS_HR_ready,"C:/Users/condo/Documents/assignments/biogeo_practicum/fl
 ######################################################################################
 
 #get needed data out of table and emliminate rest
-UMB_HH <- data.frame(cbind(as.vector(as.character(UMB_HH$TIMESTAMP_START)), UMB_HH$NEE_PI, 
+UMB_HH <- data.frame(cbind(as.vector(as.character(UMB_HH$TIMESTAMP_START)), UMB_HH$FC, 
                            UMB_HH$LE, UMB_HH$H, UMB_HH$SW_IN, UMB_HH$TA, UMB_HH$TS_1, 
                            UMB_HH$TS_2, UMB_HH$RECO_PI, UMB_HH$VPD_PI, UMB_HH$USTAR))
 
@@ -681,7 +681,7 @@ write.csv(UMB_HH_ready,"C:/Users/condo/Documents/assignments/biogeo_practicum/fl
 #######################################################################################
 
 #get needed data out of table and emliminate rest
-UMB_HR <- data.frame(cbind(as.vector(as.character(UMB_HR$TIMESTAMP_START)), UMB_HR$NEE_PI, 
+UMB_HR <- data.frame(cbind(as.vector(as.character(UMB_HR$TIMESTAMP_START)), UMB_HR$FC, 
                            UMB_HR$LE, UMB_HR$H, UMB_HR$SW_IN, UMB_HR$TA, UMB_HR$TS_1, 
                            UMB_HR$TS_2, UMB_HR$RECO_PI, UMB_HR$VPD_PI, UMB_HR$USTAR))
 

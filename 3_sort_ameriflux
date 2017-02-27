@@ -1,81 +1,101 @@
 
 # File's from step 2
-Bar_HH<-read.csv("Bar_HH.csv") # No rows to aggregate, no NEE. 
-LPH_HH<-read.csv("LPH_HH.csv") # having trouble with the data class. No rg to sort by 
-UMB_HH<-read.csv("UMB_HH.csv")# works
-MMS_HR<-read.csv("MMS_HR.csv") # Works
-HO1_HH<-read.csv("Ho1_HH.csv") # works
-HA2_HH<-read.csv("Ha2_HH.csv") # having trouble with data class. 
-HA1_HH<-read.csv("Ha1_HR.csv") # having trouble with data class.
-#thsw<- 20
-#theperday<- 4
-#thpermonth <- 15
-#table<-HA1_HH
+Bar_HH<-read.csv("Bar_HH.csv")  
+LPH_HH<-read.csv("LPH_HH.csv") 
+UMB_HH<-read.csv("UMB_HH.csv")
+MMS_HR<-read.csv("MMS_HR.csv") 
+HO1_HH<-read.csv("Ho1_HH.csv") 
+HA2_HH<-read.csv("Ha2_HH.csv") 
+HA1_HH<-read.csv("Ha1_HR.csv") 
 
-sortAmeriflux<- function(table, thsw, thperday,thpermonth) {
-SiteTable<-table
-SiteTable[SiteTable == -9999] <- NA
+require(RAtmosphere)
 
-ThSW= thsw #set threshold to 20 volts for SWR
-summary(SiteTable$Rg)
-SiteTable<- subset(SiteTable,Rg>ThSW)
-summary(SiteTable$Rg)
-x<-table(format(SiteTable$Date1))
-x<-as.data.frame(x)
-#Note: Variable 1 is your Date and Freq is the frequency of that date in the df
-ThDay= thperday #four observations in a day
-x$Var2<-ifelse(x$Freq >ThDay,TRUE,FALSE) #Make a Var2, does the date meet our threshold?
-summary(x$Var2)
-omit<-(x$Var1[x$Var2=="FALSE"])
-omit<-as.vector(omit)
-omit<-as.Date(omit,"%m-%d-%Y")
-
-
-SiteTable$Date1<-as.Date(SiteTable$Date1,"%m-%d-%Y")
-SiteTable_Filt<-SiteTable[!SiteTable$Date1 %in% omit,]
-SiteTable_Filt$Date1<-as.Date(SiteTable_Filt$Date1,"%m-%d-%Y")
-summary(SiteTable_Filt$Date1)
-summary(SiteTable$Date1)
-SiteTable_Daily_NEE<-aggregate(NEE~DoY+Month+Year+Date2, data=SiteTable_Filt,FUN=mean)
-SiteTable_Daily_LE<-aggregate(LE~DoY+Month+Year+Date2, data=SiteTable_Filt,FUN=mean)
-
-SiteTable_Daily<-merge(SiteTable_Daily_NEE,SiteTable_Daily_LE, all.x=TRUE)
-ThDays<- thpermonth #must have 15 days of data
-
-a<-table(format(SiteTable_Daily$Date2))
-a<-as.data.frame(a)
-
-a$Var2<-ifelse(a$Freq >ThDays,TRUE,FALSE)
-
-
-omit<-(a$Var1[a$Var2=="FALSE"])
-summary(a$Var2)
-
-omit<-as.vector(omit)
-
-
-SiteTable_Daily_Filt<-SiteTable_Daily[!SiteTable_Daily$Date2 %in% omit,]
-SiteTable_Monthly_NEE<-aggregate(NEE~Date2+Month+Year, data=SiteTable_Daily_Filt,FUN=mean)
-SiteTable_Monthly_LE<-aggregate(LE~Date2+Month+Year, data=SiteTable_Daily_Filt,FUN=mean)
-
-SiteTable_Monthly<-merge(SiteTable_Monthly_LE,SiteTable_Monthly_NEE, all.x=TRUE)
-#Seasonal
-#create a new variable
-SiteTable_Monthly$Season[SiteTable_Monthly$Month==6] <- "Summer"
-SiteTable_Monthly$Season[SiteTable_Monthly$Month==7] <- "Summer"
-SiteTable_Monthly$Season[SiteTable_Monthly$Month==8] <- "Summer"
-
-SiteTable_Seasonal_NEE<-aggregate(NEE[SiteTable_Monthly$Season=="Summer"]~Year[SiteTable_Monthly$Season=="Summer"], data=SiteTable_Monthly,FUN=mean)
-
-SiteTable_Seasonal_LE<-aggregate(LE[SiteTable_Monthly$Season=="Summer"]~Year[SiteTable_Monthly$Season=="Summer"], data=SiteTable_Monthly,FUN=mean)
-
-FinalSiteTable_Seasonal<-merge(SiteTable_Seasonal_LE,SiteTable_Seasonal_NEE, all.x=TRUE)
-colnames(FinalSiteTable_Seasonal)<-c("year", "LE", "NEE")
-return(FinalSiteTable_Seasonal)
+sortAmeriflux<- function(table, thsw, thperday,thpermonth, lat = 00, long = 00) {
+  SiteTable<-table
+  SiteTable[SiteTable == -9999] <- NA
+  
+  ThSW= thsw #set threshold to 20 volts for SWR
+  summary(SiteTable$Rg)
+  if(length(na.omit(SiteTable$Rg)) != 0){
+  SiteTable<- subset(SiteTable,Rg>ThSW)
+  }else{
+     SiteTable<-cbind(SiteTable, suncalc(SiteTable$DoY, Lat = lat, Long = long))
+    SiteTable<-subset(SiteTable, SiteTable$Hour < sunset)
+    SiteTable<-subset(SiteTable, SiteTable$Hour > sunrise)
+  }
+  summary(SiteTable$Rg)
+  x<-table(format(SiteTable$Date1))
+  x<-as.data.frame(x)
+  #Note: Variable 1 is your Date and Freq is the frequency of that date in the df
+  ThDay= thperday #four observations in a day
+  x$Var2<-ifelse(x$Freq >ThDay,TRUE,FALSE) #Make a Var2, does the date meet our threshold?
+  summary(x$Var2)
+  omit<-(x$Var1[x$Var2=="FALSE"])
+  omit<-as.vector(omit)
+  omit<-as.Date(omit,"%m-%d-%Y")
+  
+  
+  SiteTable$Date1<-as.Date(SiteTable$Date1,"%m-%d-%Y")
+  SiteTable_Filt<-SiteTable[!SiteTable$Date1 %in% omit,]
+  SiteTable_Filt$Date1<-as.Date(SiteTable_Filt$Date1,"%m-%d-%Y")
+  summary(SiteTable_Filt$Date1)
+  summary(SiteTable$Date1)
+  SiteTable_Daily_NEE<-aggregate(NEE~DoY+Month+Year+Date2, data=SiteTable_Filt,FUN=mean)
+  SiteTable_Daily_LE<-aggregate(LE~DoY+Month+Year+Date2, data=SiteTable_Filt,FUN=mean)
+  
+  SiteTable_Daily<-merge(SiteTable_Daily_NEE,SiteTable_Daily_LE, all.x=TRUE)
+  ThDays<- thpermonth #must have 15 days of data
+  
+  a<-table(format(SiteTable_Daily$Date2))
+  a<-as.data.frame(a)
+  
+  a$Var2<-ifelse(a$Freq >ThDays,TRUE,FALSE)
+  
+  
+  omit<-(a$Var1[a$Var2=="FALSE"])
+  summary(a$Var2)
+  
+  omit<-as.vector(omit)
+  
+  
+  SiteTable_Daily_Filt<-SiteTable_Daily[!SiteTable_Daily$Date2 %in% omit,]
+  SiteTable_Monthly_NEE<-aggregate(NEE~Date2+Month+Year, data=SiteTable_Daily_Filt,FUN=mean)
+  SiteTable_Monthly_LE<-aggregate(LE~Date2+Month+Year, data=SiteTable_Daily_Filt,FUN=mean)
+  
+  SiteTable_Monthly<-merge(SiteTable_Monthly_LE,SiteTable_Monthly_NEE, all.x=TRUE)
+  #Seasonal
+  #create a new variable
+  SiteTable_Monthly$Season[SiteTable_Monthly$Month==6] <- "Summer"
+  SiteTable_Monthly$Season[SiteTable_Monthly$Month==7] <- "Summer"
+  SiteTable_Monthly$Season[SiteTable_Monthly$Month==8] <- "Summer"
+  
+  SiteTable_Seasonal_NEE<-aggregate(NEE[SiteTable_Monthly$Season=="Summer"]~Year[SiteTable_Monthly$Season=="Summer"], data=SiteTable_Monthly,FUN=mean)
+  
+  SiteTable_Seasonal_LE<-aggregate(LE[SiteTable_Monthly$Season=="Summer"]~Year[SiteTable_Monthly$Season=="Summer"], data=SiteTable_Monthly,FUN=mean)
+  
+  FinalSiteTable_Seasonal<-merge(SiteTable_Seasonal_LE,SiteTable_Seasonal_NEE, all.x=TRUE)
+  colnames(FinalSiteTable_Seasonal)<-c("year", "LE", "NEE")
+  return(FinalSiteTable_Seasonal)
 }
+
+ha2_hh<-sortAmeriflux(HA2_HH, 20,4,15,42.54, -72.18)
+
+ha1_hh<-sortAmeriflux(HA1_HH, 20,4,15, 42.54, -72.17)
+
+lph_hh<-sortAmeriflux(LPH_HH, 20,4,15,42.54,-72.19)
+
+bar_hh<-sortAmeriflux(HA2_HH, 20,4,15)
 
 umb_hh<-sortAmeriflux(UMB_HH,20,4,15)
 
 mms_hr<-sortAmeriflux(MMS_HR,20,4,15)
 
 ho1_hh<-sortAmeriflux(HO1_HH,20,4,15)
+
+write.csv(ha2_hh, "ha2_hh_avg.csv", row.names = FALSE, col.names = FALSE)
+write.csv(ha1_hh, "ha1_hh_avg.csv", row.names = FALSE, col.names = FALSE)
+write.csv(lph_hh, "lph_hh_avg.csv", row.names = FALSE, col.names = FALSE)
+write.csv(bar_hh, "bar_hh_avg.csv", row.names = FALSE, col.names = FALSE)
+write.csv(umb_hh, "umb_hh_avg.csv", row.names = FALSE, col.names = FALSE)
+write.csv(mms_hr, "mms_hr_avg.csv", row.names = FALSE, col.names = FALSE)
+write.csv(ho1_hh, "ho1_hh_avg.csv", row.names = FALSE, col.names = FALSE)

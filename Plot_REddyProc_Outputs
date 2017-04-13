@@ -1,75 +1,80 @@
 ```{r}
-howland <- as.data.frame(read.table("/Users/juliamarrs/Documents/Biogeoscience_Practicum/Ho1_REddyProc_Output.txt", header = T))
-Ho1_REddyProc <- howland
+howland <- as.data.frame(read.table("/Users/juliamarrs/Documents/Biogeoscience_Practicum/Ameriflux/Ho1_REddyProc_Output.txt", header = T))
+
+harvard2 <- as.data.frame(read.table("/Users/juliamarrs/Documents/Biogeoscience_Practicum/Ameriflux/Ha2_REddyProc_output.txt", header = T))
 ```
 
 ```{r}
 require(data.table)
 require(trend)
-NEE_umolm2s <- howland$NEE # comes in umolCO2 m-2 s-1
+
+site <- harvard2 ##CHANGE THIS VARIABLE TO SWITCH SITES!
+
+NEE_umolm2s <-site$NEE # comes in umolCO2 m-2 s-1
 NEE_umolm2s[NEE_umolm2s == -9999] <- 0 #change -9999s to 0 so they don't get multiplied to weird values later
 
 mw_CO2_gmol <- 44.01 #molecular weight of CO2 in g/mol
 mw_CO2_gumol <- mw_CO2_gmol / 1e6  #molecular weight of CO2 in g/umol
 NEE_g_CO2_m2yr <- NEE_umolm2s * mw_CO2_gumol * (60*60*24*365) #convert from micromoles of CO2 to grams CO2 and seconds-1 to years-1
 
-LE_Wm2 <- howland$LE # comes in W m-2 aka J m-2 s-1
+LE_Wm2 <- site$LE # comes in W m-2 aka J m-2 s-1
 LE_Wm2[LE_Wm2 == -9999] <- 0 #change -9999s to 0
 lambda <- 2.5e6 # latent head of vaporization in J kg-1
 LE_kgmyr <- (LE_Wm2 / lambda) * (60*60*24*365) #convert evap to kg m-2 yr-1
 
-VPD <- howland$VPD 
+VPD <- site$VPD 
 VPD[VPD == -9999] <- 0 #get rid of NAs in this column too
-Year <- howland$Year
+Year <- site$Year
 
-howland_right_units <- as.data.table(cbind(NEE_g_CO2_m2yr, LE_kgmyr, VPD, Year)) 
-howland_right_units$WUE <- howland_right_units$NEE_g_CO2_m2yr / (howland_right_units$LE_kgmyr * 1000)
-howland_right_units$iWUE <- howland_right_units$WUE / howland_right_units$VPD
-howland_right_units$NEE_annual <- 0
-howland_right_units$LE_annual <- 0
-howland_right_units$VPD_annual <- 0
-howland_right_units$WUE_annual <- 0
-howland_right_units$iWUE_annual <- 0
+right_units <- as.data.table(cbind(NEE_g_CO2_m2yr, LE_kgmyr, VPD, Year)) 
+right_units$WUE <- right_units$NEE_g_CO2_m2yr / (right_units$LE_kgmyr * 1000)
+right_units$iWUE <- right_units$WUE / right_units$VPD
+right_units$NEE_annual <- 0
+right_units$LE_annual <- 0
+right_units$VPD_annual <- 0
+right_units$WUE_annual <- 0
+right_units$iWUE_annual <- 0
 
-howland_right_units[, NEE_annual := mean(NEE_g_CO2_m2yr), by = Year] #calculate annual mean NEE values
-howland_right_units[, LE_annual := mean(LE_kgmyr), by = Year] #calculate annual mean LE values
-howland_right_units[, VPD_annual := mean(VPD), by = Year] #calculate annual mean VPD values
-howland_right_units[, WUE_annual := mean(VPD), by = Year] #calculate annual mean WUE values
-howland_right_units[, iWUE_annual := mean(VPD), by = Year] #calculate annual mean iWUE values
+right_units[, NEE_annual := mean(NEE_g_CO2_m2yr), by = Year] #calculate annual mean NEE values
+right_units[, LE_annual := mean(LE_kgmyr), by = Year] #calculate annual mean LE values
+right_units[, VPD_annual := mean(VPD), by = Year] #calculate annual mean VPD values
+right_units[, WUE_annual := mean(VPD), by = Year] #calculate annual mean WUE values
+right_units[, iWUE_annual := mean(VPD), by = Year] #calculate annual mean iWUE values
 
-NEE_ann_plot <- unique(howland_right_units$NEE_annual) #annual mean NEE values just once for summary table
-LE_ann_plot <- unique(howland_right_units$LE_annual) #annual mean LE values just once for summary table
-VPD_ann_plot <- unique(howland_right_units$VPD_annual) #annual mean VPD values just once for summary table
-WUE_ann_plot <- unique(howland_right_units$VPD_annual) #annual mean WUE values just once for summary table
-iWUE_ann_plot <- unique(howland_right_units$VPD_annual) #annual mean iWUE values just once for summary table
-years <- unique(as.list(howland$Year)) # list of years in a format that can go in the summary table
+NEE_ann_plot <- unique(right_units$NEE_annual) #annual mean NEE values just once for summary table
+LE_ann_plot <- unique(right_units$LE_annual) #annual mean LE values just once for summary table
+VPD_ann_plot <- unique(right_units$VPD_annual) #annual mean VPD values just once for summary table
+WUE_ann_plot <- unique(right_units$VPD_annual) #annual mean WUE values just once for summary table
+iWUE_ann_plot <- unique(right_units$VPD_annual) #annual mean iWUE values just once for summary table
+years <- unique(as.list(site$Year)) # list of years in a format that can go in the summary table
 
-howland_annual <- as.data.frame(cbind(NEE_ann_plot, LE_ann_plot, VPD_ann_plot, WUE_ann_plot, iWUE_ann_plot, years)) #summary by year
+annual <- as.data.frame(cbind(NEE_ann_plot, LE_ann_plot, VPD_ann_plot, WUE_ann_plot, iWUE_ann_plot, years)) #summary by year
 
-howland_ann_NEE <- cbind(howland_annual[,1], howland_annual[,6]) #just NEE by year
-howland_ann_WUE <- cbind(howland_annual[,4], howland_annual[,6]) #just WUE by year
-howland_ann_iWUE <- cbind(howland_annual[,5], howland_annual[,6]) #just iWUE by year
+ann_NEE <- cbind(annual[,1], annual[,6]) #just NEE by year
+ann_WUE <- cbind(annual[,4], annual[,6]) #just WUE by year
+ann_iWUE <- cbind(annual[,5], annual[,6]) #just iWUE by year
 
-howland_ann_NEE_ts <- as.ts(as.numeric(howland_ann_NEE), start = as.numeric(years[1]), end = as.numeric(years[19]), frequency = 1, deltat = 1, ts.eps = getOption("ts.eps"), class = ts, names = c("NEE_ann_plot", "years")) #time series o3f just NEE and year for Sen's slope
-howland_ann_WUE_ts <- as.ts(as.numeric(howland_ann_WUE), start = as.numeric(years[1]), end = as.numeric(years[19]), frequency = 1, deltat = 1, ts.eps = getOption("ts.eps"), class = ts, names = c("WUE_ann_plot", "years")) #time series of just WUE and year for Sen's slope
-howland_ann_iWUE_ts <- as.ts(as.numeric(howland_ann_iWUE), start = as.numeric(years[1]), end = as.numeric(years[19]), frequency = 1, deltat = 1, ts.eps = getOption("ts.eps"), class = ts, names = c("iWUE_ann_plot", "years")) #time series of just iWUE and year for Sen's slope
+ann_NEE_ts <- as.ts(as.numeric(ann_NEE), start = as.numeric(years[1]), end = as.numeric(years[19]), frequency = 1, deltat = 1, ts.eps = getOption("ts.eps"), class = ts, names = c("NEE_ann_plot", "years")) #time series o3f just NEE and year for Sen's slope
 
-NEE_sen <- sens.slope(howland_ann_NEE_ts, level = 0.95) #Sen's slope for NEE by year
-WUE_sen <- sens.slope(howland_ann_WUE_ts, level = 0.95) #Sen's slope for WUE by year
-iWUE_sen <- sens.slope(howland_ann_iWUE_ts, level = 0.95) #Sen's slope for iWUE by year
+ann_WUE_ts <- as.ts(as.numeric(ann_WUE), start = as.numeric(years[1]), end = as.numeric(years[19]), frequency = 1, deltat = 1, ts.eps = getOption("ts.eps"), class = ts, names = c("WUE_ann_plot", "years")) #time series of just WUE and year for Sen's slope
 
-plot(howland_annual$years, howland_annual$NEE_ann_plot, type = "l", xaxt = "n", xlab = "Year", ylab = "Average NEE (g CO2 m-2 yr-1)", main = "Replicating Keenan Fig. 3, Howland Forest")
+ann_iWUE_ts <- as.ts(as.numeric(ann_iWUE), start = as.numeric(years[1]), end = as.numeric(years[19]), frequency = 1, deltat = 1, ts.eps = getOption("ts.eps"), class = ts, names = c("iWUE_ann_plot", "years")) #time series of just iWUE and year for Sen's slope
+
+NEE_sen <- sens.slope(na.omit(ann_NEE_ts), level = 0.95) #Sen's slope for NEE by year
+WUE_sen <- sens.slope(na.omit(ann_WUE_ts), level = 0.95) #Sen's slope for WUE by year
+iWUE_sen <- sens.slope(na.omit(ann_iWUE_ts), level = 0.95) #Sen's slope for iWUE by year
+
+plot(annual$years, annual$NEE_ann_plot, type = "l", xaxt = "n", xlab = "Year", ylab = "Average NEE (g CO2 m-2 yr-1)", main = "Replicating Keenan Fig. 3, Ha2") ###CHANGE TITLE FOR SITE
 axis(side = 1, at = c(1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014))
 NEE_sen_coefs <- as.vector(c(as.numeric(NEE_sen$b.sen), as.numeric(NEE_sen$intercept)))
 abline(coef = NEE_sen_coefs)
 #abline(a = as.numeric(NEE_sen$intercept), b = as.numeric(NEE_sen$b.sen))
 
-plot(howland_annual$years, howland_annual$WUE_ann_plot, type = "l", xaxt = "n", xlab = "Year", ylab = "Average WUE", main = "Replicating Keenan Fig. 1, WUE, Howland Forest")
+plot(annual$years, annual$WUE_ann_plot, type = "l", xaxt = "n", xlab = "Year", ylab = "Average WUE", main = "Replicating Keenan Fig. 1, WUE, Ha2") ###CHANGE TITLE FOR SITE
 axis(side = 1, at = c(1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014))
 abline(a = as.numeric(WUE_sen$intercept), b = as.numeric(WUE_sen$b.sen), col = "blue")
 
-plot(howland_annual$years, howland_annual$NEE_ann_plot, type = "l", xaxt = "n", xlab = "Year", ylab = "Average Intrinsic WUE (hPa-1)", main = "Replicating Keenan Fig. 1, Intrinsic WUE, Howland Forest")
+plot(annual$years, annual$NEE_ann_plot, type = "l", xaxt = "n", xlab = "Year", ylab = "Average Intrinsic WUE (hPa-1)", main = "Replicating Keenan Fig. 1, Intrinsic WUE, Ha2") ###CHANGE TITLE FOR SITE
 axis(side = 1, at = c(1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014))
 abline(a = as.numeric(iWUE_sen$intercept), b = as.numeric(iWUE_sen$b.sen), col = "blue")
-?abline
 ```

@@ -99,35 +99,35 @@ iWUE_CO2_sen <- zyp.sen(V2 ~ V1, ann_iWUE_CO2)
 iWUE_C_sen <- zyp.sen(V2 ~ V1, ann_iWUE_C)
 
 plot(annual$Year, annual$NEE_CO2_annual, type = "l", xaxt = "n", xlab = "Year", ylab = "Average NEE (g CO2 m-2 yr-1)", main = "Replicating Keenan Fig. 3, CO2 units")
-axis(side = 1, at = c(1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014))
+axis(side = 1, at = as.numeric(annual$Year))
 abline(NEE_CO2_sen$coefficients, col = "grey", lty = 2)
 
 plot(annual$Year, annual$NEE_C_annual, type = "l", xaxt = "n", xlab = "Year", ylab = "Average NEE (g C m-2 yr-1)", main = "Replicating Keenan Fig. 3, C units")
-axis(side = 1, at = c(1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014))
+axis(side = 1, at = as.numeric(annual$Year))
 abline(NEE_C_sen$coefficients, col = "grey", lty = 2)
 
 plot(annual$Year, annual$WUE_CO2_annual, type = "l", xaxt = "n", xlab = "Year", ylab = "Average WUE", main = "Replicating Keenan Fig. 1, WUE, CO2 units")
-axis(side = 1, at = c(1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014))
+axis(side = 1, at = as.numeric(annual$Year))
 abline(WUE_CO2_sen$coefficients, col = "grey", lty = 2)
 
 plot(annual$Year, annual$WUE_C_annual, type = "l", xaxt = "n", xlab = "Year", ylab = "Average WUE", main = "Replicating Keenan Fig. 1, WUE, C units")
-axis(side = 1, at = c(1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014))
+axis(side = 1, at = as.numeric(annual$Year))
 #abline(WUE_C_sen$coefficients, col = "grey", lty = 2)
 
 plot(annual$Year, annual$LE_Wm2s_annual, type = "l", xaxt = "n", xlab = "Year", ylab = "Average LE (W m-2 s-1)", main = "LE from REddyProc")
-axis(side = 1, at = c(1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014))
+axis(side = 1, at = as.numeric(annual$Year))
 abline(LE_sen$coefficients, col = "grey", lty = 2)
 
 plot(annual$Year, annual$VPD_annual, type = "l", xaxt = "n", xlab = "Year", ylab = "Average LE (kg H2O m-2 yr-1)", main = "LE from REddyProc")
-axis(side = 1, at = c(1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014))
+axis(side = 1, at = as.numeric(annual$Year))
 abline(VPD_sen$coefficients, col = "grey", lty = 2)
 
 plot(annual$Year, annual$iWUE_CO2_annual, type = "l", xaxt = "n", xlab = "Year", ylab = "Average Intrinsic WUE (hPa-1)", main = "Replicating Keenan Fig. 1, Intrinsic WUE")
-axis(side = 1, at = c(1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014))
+axis(side = 1, at = as.numeric(annual$Year))
 abline(iWUE_CO2_sen$coefficients, col = "grey", lty = 2)
 
 plot(annual$Year, annual$iWUE_C_annual, type = "l", xaxt = "n", xlab = "Year", ylab = "Average Intrinsic WUE (hPa-1)", main = "Replicating Keenan Fig. 1, Intrinsic WUE")
-axis(side = 1, at = c(1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014))
+axis(side = 1, at = as.numeric(annual$Year))
 abline(iWUE_C_sen$coefficients, col = "grey", lty = 2)
 
 ```

@@ -36,10 +36,10 @@ NEE_g_CO2_m2yr <- NEE_umolm2s * mw_CO2_gumol * (60*60*24*365) #convert from micr
 NEE_g_C_m2yr <- NEE_umolm2s * am_C_gumol * (60*60*24*365) #convert from micromoles of CO2 to grams CO2 and seconds-1 to years-1
 
 ##LE units conversion:
-LE_Wm2 <- site_summer$LE_orig # comes in W m-2 aka J m-2 s-1
+LE_Wm2s <- site_summer$LE_orig # comes in W m-2 aka J m-2 s-1
 lambda <- 2.5e6 # latent heat of vaporization in J kg-1
+LE_Wm2s[LE_Wm2s == -9999] <- NA
 LE_kgmyr <- (LE_Wm2 / lambda) * (60*60*24*365) #convert evap to kg m-2 yr-1
-LE_kgmyr[LE_kgmyr == -9999] <- NA
 LE_kgmyr[LE_kgmyr < -100000] <- NA ## Ha2, at least, has a few suspiciously small LE values that are throwing all the annual averages off. Feel free to adjust if your site also has something weird!
 
 ## create variables for other important columns -- VPD and year
@@ -49,10 +49,10 @@ Year <- site_summer$Year
 
 ## make a new table of variables we want in the right units for comparison to Keenan
 
-right_units <- as.data.table(cbind(NEE_g_CO2_m2yr, NEE_g_C_m2yr, LE_kgmyr, VPD, Year)) 
-right_units$WUE_CO2 <- right_units$NEE_g_CO2_m2yr / (right_units$LE_kgmyr * 1000) ##(CO2 units)
+right_units <- as.data.table(cbind(NEE_g_CO2_m2yr, NEE_g_C_m2yr, LE_kgmyr, LE_Wm2s, VPD, Year)) 
+right_units$WUE_CO2 <- right_units$NEE_g_CO2_m2yr / (right_units$LE_kgmyr) ##(CO2 units)
 right_units$iWUE_CO2 <- right_units$WUE_CO2 / right_units$VPD ##(CO2 units)
-right_units$WUE_C <- right_units$NEE_g_C_m2yr / (right_units$LE_kgmyr * 1000) ##(C units)
+right_units$WUE_C <- right_units$NEE_g_C_m2yr / (right_units$LE_kgmyr) ##(C units)
 right_units$iWUE_C <- right_units$WUE_C / right_units$VPD ##(C units)
 
 ## remove any weird values caused by dividing by 0 VPD:
@@ -61,76 +61,73 @@ right_units$WUE_C[right_units$WUE_C == Inf | right_units$WUE_C == -Inf | right_u
 right_units$iWUE_CO2[right_units$iWUE_CO2 == Inf | right_units$iWUE_CO2 == -Inf | right_units$iWUE_CO2 == NaN] <- NA
 right_units$iWUE_C[right_units$iWUE_C == Inf | right_units$iWUE_C == -Inf | right_units$iWUE_C == NaN] <- NA
 
-## annual means by variable
 right_units[, NEE_CO2_annual := mean(NEE_g_CO2_m2yr, na.rm=T), by = Year] #calculate annual mean NEE values (CO2 units)
 right_units[, NEE_C_annual := mean(NEE_g_C_m2yr, na.rm=T), by = Year] #calculate annual mean NEE values (C units)
-right_units[, LE_annual := mean(LE_kgmyr, na.rm=T), by = Year] #calculate annual mean LE values
+right_units[, LE_kgmyr_annual := mean(LE_kgmyr, na.rm=T), by = Year] #calculate annual mean LE values in kgmyr
+right_units[, LE_Wm2s_annual := mean(LE_Wm2s, na.rm=T), by = Year]#calculate annual mean LE values in W/m2
 right_units[, VPD_annual := mean(VPD, na.rm=T), by = Year] #calculate annual mean VPD values
 right_units[, WUE_CO2_annual := mean(WUE_CO2, na.rm=T), by = Year] #calculate annual mean WUE values (CO2 units)
 right_units[, iWUE_CO2_annual := mean(iWUE_CO2, na.rm=T), by = Year] #calculate annual mean iWUE values (CO2 units)
 right_units[, WUE_C_annual := mean(WUE_C, na.rm=T), by = Year] #calculate annual mean WUE values (C units)
 right_units[, iWUE_C_annual := mean(iWUE_C, na.rm=T), by = Year] #calculate annual mean iWUE values (C units)
 
-#summary table:
-ru_melt <- melt(right_units, id.vars = "Year", measure.vars = c("NEE_CO2_annual", "NEE_C_annual", "LE_annual", "VPD_annual", "WUE_CO2_annual", "iWUE_CO2_annual", "WUE_C_annual", "iWUE_C_annual"), na.rm = TRUE)
+ru_melt <- melt(right_units, id.vars = "Year", measure.vars = c("NEE_CO2_annual", "NEE_C_annual", "LE_kgmyr_annual", "LE_Wm2s_annual", "VPD_annual", "WUE_CO2_annual", "iWUE_CO2_annual", "WUE_C_annual", "iWUE_C_annual"), na.rm = TRUE)
 annual <- cast(ru_melt, Year ~ variable, mean)
 annual[annual == NaN] <- NA
-```
-## make data frames to use in sen's slope:
-```{r}
+
 ann_NEE_CO2 <- as.data.frame(cbind(annual[,1], annual[,2])) #just NEE by year (CO2 units)
 ann_NEE_C <- as.data.frame(cbind(annual[,1], annual[,3])) #just NEE by year (C units)
-ann_LE <- as.data.frame(cbind(annual[,1], annual[,4])) #just NEE by year (C units)
-ann_VPD <- as.data.frame(cbind(annual[,1], annual[,5])) #just NEE by year (C units)
-ann_WUE_CO2 <- as.data.frame(cbind(annual[,1], annual[1:3,6])) #just WUE by year (CO2 units) ##changed rows to get around NAs!
-ann_WUE_C <- as.data.frame(cbind(annual[,1], annual[1:3,7])) #just iWUE by year (C units) ##changed rows to get around NAs!
-ann_iWUE_CO2 <- as.data.frame(cbind(annual[,1], annual[,8])) #just iWUE by year (CO2 units)
-ann_iWUE_CO2 <- as.data.frame(cbind(annual[,1], annual[,9])) #just iWUE by year (C units)
-```
-## get Sen's slopes:
-``{r}
-require(zyp)
+ann_LE_kgmyr <- as.data.frame(cbind(annual[,1], annual[,4])) #just LE by year kgmyr
+ann_LE_Wm2s <- as.data.frame(cbind(annual[,1], annual[,5])) #just LE by year W/m2s
+#ann_VPD <- as.data.frame(cbind(annual[,1], annual[,5]))
+ann_VPD <- as.data.frame(rbind((cbind(annual[1:9,1], annual[1:9,6])), (cbind(annual[12,1], annual[12,6])), (cbind(annual[15:19,1], annual[15:19,6])))) #just VPD by year
+ann_WUE_CO2 <- as.data.frame(cbind(annual[,1], annual[,7])) #just WUE by year (CO2 units) 
+ann_WUE_C <- as.data.frame(cbind(annual[,1], annual[,8])) #just WUE by year (C units) 
+#ann_iWUE_CO2 <- as.data.frame(cbind(annual[,1], annual[,8]))
+ann_iWUE_CO2 <- as.data.frame(rbind((cbind(annual[1:9,1], annual[1:9,9])), (cbind(annual[12,1], annual[12,9])), (cbind(annual[15:19,1], annual[15:19,9]))))  #just iWUE by year (CO2 units)
+#ann_WUE_C <- as.data.frame(cbind(annual[,1], annual[,9]))
+ann_iWUE_C <- as.data.frame(rbind((cbind(annual[1:9,1], annual[1:9,10])), (cbind(annual[12,1], annual[12,10])), (cbind(annual[15:19,1], annual[15:19,10]))))  #just iWUE by year (C units)
 
 NEE_CO2_sen <- zyp.sen(V2 ~ V1, ann_NEE_CO2)
 NEE_C_sen <- zyp.sen(V2 ~ V1, ann_NEE_C)
 WUE_CO2_sen <- zyp.sen(V2 ~ V1, ann_WUE_CO2)
 WUE_C_sen <- zyp.sen(V2 ~ V1, ann_WUE_C)
-LE_sen <- zyp.sen(V2 ~ V1, ann_LE)
+LE_kgmyr_sen <- zyp.sen(V2 ~ V1, ann_LE_kgmyr)
+LE_Wm2s_sen <- zyp.sen(V2 ~ V1, ann_LE_Wm2s)
 VPD_sen <- zyp.sen(V2 ~ V1, ann_VPD)
-iWUE_CO2_sen <- zyp.sen(V2 ~ V1, ann_NEE_CO2)
-iWUE_C_sen <- zyp.sen(V2 ~ V1, ann_NEE_CO2)
-```
-## Plot!!
-```{r}
+iWUE_CO2_sen <- zyp.sen(V2 ~ V1, ann_iWUE_CO2)
+iWUE_C_sen <- zyp.sen(V2 ~ V1, ann_iWUE_C)
+
 plot(annual$Year, annual$NEE_CO2_annual, type = "l", xaxt = "n", xlab = "Year", ylab = "Average NEE (g CO2 m-2 yr-1)", main = "Replicating Keenan Fig. 3, CO2 units")
-axis(side = 1, at = c(2002, 2003, 2004, 2005))
+axis(side = 1, at = c(1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014))
 abline(NEE_CO2_sen$coefficients, col = "grey", lty = 2)
 
 plot(annual$Year, annual$NEE_C_annual, type = "l", xaxt = "n", xlab = "Year", ylab = "Average NEE (g C m-2 yr-1)", main = "Replicating Keenan Fig. 3, C units")
-axis(side = 1, at = c(2002, 2003, 2004, 2005))
+axis(side = 1, at = c(1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014))
 abline(NEE_C_sen$coefficients, col = "grey", lty = 2)
 
 plot(annual$Year, annual$WUE_CO2_annual, type = "l", xaxt = "n", xlab = "Year", ylab = "Average WUE", main = "Replicating Keenan Fig. 1, WUE, CO2 units")
-axis(side = 1, at = c(2002, 2003, 2004, 2005))
+axis(side = 1, at = c(1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014))
 abline(WUE_CO2_sen$coefficients, col = "grey", lty = 2)
 
 plot(annual$Year, annual$WUE_C_annual, type = "l", xaxt = "n", xlab = "Year", ylab = "Average WUE", main = "Replicating Keenan Fig. 1, WUE, C units")
-axis(side = 1, at = c(2002, 2003, 2004, 2005))
-abline(WUE_C_sen$coefficients, col = "grey", lty = 2)
+axis(side = 1, at = c(1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014))
+#abline(WUE_C_sen$coefficients, col = "grey", lty = 2)
 
-plot(annual$Year, annual$LE_annual, type = "l", xaxt = "n", xlab = "Year", ylab = "Average LE (kg H2O m-2 yr-1)", main = "LE from REddyProc")
-axis(side = 1, at = c(2002, 2003, 2004, 2005))
+plot(annual$Year, annual$LE_Wm2s_annual, type = "l", xaxt = "n", xlab = "Year", ylab = "Average LE (W m-2 s-1)", main = "LE from REddyProc")
+axis(side = 1, at = c(1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014))
 abline(LE_sen$coefficients, col = "grey", lty = 2)
 
-plot(annual$Year, annual$VPD_annual, type = "l", xaxt = "n", xlab = "Year", ylab = "Average LE (kg H2O m-2 yr-1)", main = "LE from REddyProc, Ha2")
-axis(side = 1, at = c(2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013))
+plot(annual$Year, annual$VPD_annual, type = "l", xaxt = "n", xlab = "Year", ylab = "Average LE (kg H2O m-2 yr-1)", main = "LE from REddyProc")
+axis(side = 1, at = c(1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014))
 abline(VPD_sen$coefficients, col = "grey", lty = 2)
 
-plot(annual$Year, annual$iWUE_CO2_annual, type = "l", xaxt = "n", xlab = "Year", ylab = "Average Intrinsic WUE (hPa-1)", main = "Replicating Keenan Fig. 1, Intrinsic WUE, Ha2")
-axis(side = 1, at = c(2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013))
+plot(annual$Year, annual$iWUE_CO2_annual, type = "l", xaxt = "n", xlab = "Year", ylab = "Average Intrinsic WUE (hPa-1)", main = "Replicating Keenan Fig. 1, Intrinsic WUE")
+axis(side = 1, at = c(1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014))
 abline(iWUE_CO2_sen$coefficients, col = "grey", lty = 2)
 
-plot(annual$Year, annual$iWUE_C_annual, type = "l", xaxt = "n", xlab = "Year", ylab = "Average Intrinsic WUE (hPa-1)", main = "Replicating Keenan Fig. 1, Intrinsic WUE, Ha2")
-axis(side = 1, at = c(2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013))
+plot(annual$Year, annual$iWUE_C_annual, type = "l", xaxt = "n", xlab = "Year", ylab = "Average Intrinsic WUE (hPa-1)", main = "Replicating Keenan Fig. 1, Intrinsic WUE")
+axis(side = 1, at = c(1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014))
 abline(iWUE_C_sen$coefficients, col = "grey", lty = 2)
+
 ```

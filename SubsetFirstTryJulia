@@ -1,0 +1,30 @@
+```{r}
+bar_hh <- read.csv("/Users/juliamarrs/Documents/Biogeoscience_Practicum/Bar_HH.csv")
+bar_hh <- as.data.frame(bar_hh)
+
+#get values of unique years for this site
+#actual years will be used below - for now, just need length of this list, aka how many years of data do we have for this site
+unique_years <- unique(as.list(bar_hh$Year))
+num_years <- length(unique_years)
+
+#number of total days in all these years, including leap years
+years_days <- (num_years * 365) + (num_years / 4)
+
+#empty vector of length years_days + vector of all julian dates
+daylight_hours <- matrix(ncol = 1, nrow = years_days, 0)
+doy <- seq(1, 366, 1)
+
+#function to add up the number of hours per day and year that are above the 20 W/m2 threshold
+#aka number of daylight hours
+get_daylight_hours <- function(doy, year, rg) {
+  daylight_hours <- sum(bar_hh$DoY == doy & bar_hh$Year == year & bar_hh$Rg > day_threshold)
+}
+
+#apply function to empty vector from before
+#for some reason, this is giving me values for one year's worth of data, maybe 2011?
+#anyway, something is not being applied correctly - anyone see my error with mapply / typo??
+daylight_hours <- mapply(get_daylight_hours, doy, unique_years, bar_hh)
+
+#this works fine on one example at a time! 
+sum(bar_hh$DoY == 81 & bar_hh$Year == 2005 & bar_hh$Rg > day_threshold)
+```
